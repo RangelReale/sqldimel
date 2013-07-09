@@ -29,5 +29,5 @@ USAGE
 
 	b.Where("id = ? and weight > ?", 1, 70.2)
 
-        // db = *sql.DB
-        res, err = db.Exec(b.Output(sqldimel.UPDATE), b.OutputParams(sqldimel.UPDATE))
+	// db = *sql.DB
+	res, err = db.Exec(b.Output(sqldimel.UPDATE), b.OutputParams(sqldimel.UPDATE))
