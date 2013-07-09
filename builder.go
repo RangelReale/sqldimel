@@ -63,6 +63,7 @@ func (b *Builder) Add(fieldname string, value interface{}) {
 }
 
 // Add a query string to be put on the WHERE part if needed by the DML
+/// ALWAYS use ? to indicate parameter positions
 func (b *Builder) Where(query string, args ...interface{}) {
 	b.where = query
 	b.whereargs = args

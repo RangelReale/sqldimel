@@ -9,6 +9,8 @@ Using a processor, it is possible to customize the way parameters are generated 
 
 Processors using "?" and "$1, $2" are included.
 
+NOTE: when using WHERE, ALWAYS use "?", this is the default placeholder that will be replaced by the processor.
+
 INSTALLATION
 ------------
 
