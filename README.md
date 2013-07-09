@@ -14,22 +14,21 @@ NOTE: when using WHERE, ALWAYS use "?", this is the default placeholder that wil
 INSTALLATION
 ------------
 
-go get github.com/RangelReale/sqldimel
+	go get github.com/RangelReale/sqldimel
 
-import "github.com/RangelReale/sqldimel"
+	import "github.com/RangelReale/sqldimel"
 
 
 USAGE
 -----
 
 	b := sqldimel.NewBuilder("user")
-	b.Add("id", 1)
-	b.Add("name", "Monte Marto")
-	b.Add("dob", time.Now())
-	b.Add("optional", nil)
-	b.Add("weight", 80.2)
-
-	b.Where("id = ? and weight > ?", 1, 70.2)
+	b.Add("id", 1).
+		Add("name", "Monte Marto").
+		Add("dob", time.Now()).
+		Add("optional", nil).
+		Add("weight", 80.2).
+		Where("id = ? and weight > ?", 1, 70.2)
 
 	// db = *sql.DB
 	res, err = db.Exec(b.Output(sqldimel.UPDATE), b.OutputParams(sqldimel.UPDATE))

@@ -25,11 +25,12 @@ const (
 
 // Builder is the generation class
 type Builder struct {
-	table     string
-	fields    *list.List
-	where     string
-	whereargs []interface{}
-	processor BuilderProcessor
+	table           string
+	fields          *list.List
+	where           string
+	whereargs       []interface{}
+	allowemptywhere bool
+	processor       BuilderProcessor
 }
 
 type field struct {
@@ -40,8 +41,9 @@ type field struct {
 // Creates a new builder for the specified table, with a default processor
 func NewBuilder(table string) *Builder {
 	b := Builder{
-		table:     table,
-		processor: &BuildProcessorDefault{},
+		table:           table,
+		processor:       &BuildProcessorDefault{},
+		allowemptywhere: false,
 	}
 	b.fields = list.New()
 	return &b
@@ -50,23 +52,31 @@ func NewBuilder(table string) *Builder {
 // Creates a new builder for the specified table and processor
 func NewBuilderProc(table string, processor BuilderProcessor) *Builder {
 	b := Builder{
-		table:     table,
-		processor: processor,
+		table:           table,
+		processor:       processor,
+		allowemptywhere: false,
 	}
 	b.fields = list.New()
 	return &b
 }
 
+// Sets if empty Where is allowed (if not, UPDATE / DELETE without where will return blank)
+func (b *Builder) AllowEmptyWhere(value bool) {
+	b.allowemptywhere = value
+}
+
 // Add a field and value to the builder
-func (b *Builder) Add(fieldname string, value interface{}) {
+func (b *Builder) Add(fieldname string, value interface{}) *Builder {
 	b.fields.PushBack(&field{name: fieldname, value: value})
+	return b
 }
 
 // Add a query string to be put on the WHERE part if needed by the DML
 /// ALWAYS use ? to indicate parameter positions
-func (b *Builder) Where(query string, args ...interface{}) {
+func (b *Builder) Where(query string, args ...interface{}) *Builder {
 	b.where = query
 	b.whereargs = args
+	return b
 }
 
 // Returns the SQL and parameters at the same time
@@ -75,8 +85,17 @@ func (b *Builder) OutputAll(dmltype DMLType) (string, []interface{}) {
 }
 
 // Returns the generated SQL. It should be used together with OutputParams
-// to execute on the database
+// to execute on the database.
+// May return blank if "Where" not allowed to be empty
 func (b *Builder) Output(dmltype DMLType) string {
+	// return blank if "Where" is not allowed to be blank
+	switch dmltype {
+	case UPDATE, DELETE:
+		if !b.allowemptywhere && b.where == "" {
+			return ""
+		}
+	}
+
 	switch dmltype {
 	case INSERT:
 		return b.buildInsert()
