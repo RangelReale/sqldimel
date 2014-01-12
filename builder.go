@@ -27,6 +27,7 @@ const (
 type Builder struct {
 	table           string
 	fields          *list.List
+	fieldsmap       map[int]*list.List
 	where           string
 	whereargs       []interface{}
 	allowemptywhere bool
@@ -44,6 +45,7 @@ func NewBuilder(table string) *Builder {
 		table:           table,
 		processor:       &BuildProcessorDefault{},
 		allowemptywhere: false,
+		fieldsmap:       make(map[int]*list.List),
 	}
 	b.fields = list.New()
 	return &b
@@ -68,6 +70,16 @@ func (b *Builder) AllowEmptyWhere(value bool) {
 // Add a field and value to the builder
 func (b *Builder) Add(fieldname string, value interface{}) *Builder {
 	b.fields.PushBack(&field{name: fieldname, value: value})
+	return b
+}
+
+// AddAsList adds a list of fields and values to the builder
+// for use with INSERT commands
+func (b *Builder) AddAsList(index int, fieldname string, value interface{}) *Builder {
+	if _, ok := b.fieldsmap[index]; !ok {
+		b.fieldsmap[index] = new(list.List)
+	}
+	b.fieldsmap[index].PushBack(&field{name: fieldname, value: value})
 	return b
 }
 
@@ -174,28 +186,64 @@ func (b *Builder) buildInsert() string {
 
 	ret.WriteString(fmt.Sprintf("INSERT INTO %s (", b.table))
 	first := true
-	for f := b.fields.Front(); f != nil; f = f.Next() {
-		if !first {
-			ret.WriteString(", ")
-		} else {
-			first = false
+	if len(b.fieldsmap) == 0 {
+		for f := b.fields.Front(); f != nil; f = f.Next() {
+			if !first {
+				ret.WriteString(", ")
+			} else {
+				first = false
+			}
+			ret.WriteString(f.Value.(*field).name)
 		}
-		ret.WriteString(f.Value.(*field).name)
+	} else {
+		for f := b.fieldsmap[0].Front(); f != nil; f = f.Next() {
+			if !first {
+				ret.WriteString(", ")
+			} else {
+				first = false
+			}
+			ret.WriteString(f.Value.(*field).name)
+		}
 	}
 
-	ret.WriteString(") VALUES (")
-	first = true
-	b.processor.BeginParams()
-	for f := b.fields.Front(); f != nil; f = f.Next() {
-		if !first {
-			ret.WriteString(", ")
-		} else {
+	if len(b.fieldsmap) == 0 {
+		ret.WriteString(") VALUES (")
+		first = true
+		b.processor.BeginParams()
+		for f := b.fields.Front(); f != nil; f = f.Next() {
+			if !first {
+				ret.WriteString(", ")
+			} else {
+				first = false
+			}
+			ret.WriteString(b.processor.NextParam(f.Value.(*field).name))
+		}
+		ret.WriteString(")")
+	} else {
+		ret.WriteString(") VALUES (")
+		first = true
+		for i, fm := range b.fieldsmap {
+			if !first {
+				ret.WriteString(" (")
+			}
+			firstInner := true
+			b.processor.BeginParams()
+			for f := fm.Front(); f != nil; f = f.Next() {
+				if !firstInner {
+					ret.WriteString(", ")
+				} else {
+					firstInner = false
+				}
+				ret.WriteString(b.processor.NextParam(f.Value.(*field).name))
+			}
+			if i == (len(b.fieldsmap) - 1) {
+				ret.WriteString(")")
+			} else {
+				ret.WriteString("),")
+			}
 			first = false
 		}
-		ret.WriteString(b.processor.NextParam(f.Value.(*field).name))
 	}
-	ret.WriteString(")")
-
 	return ret.String()
 }
 
