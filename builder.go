@@ -123,7 +123,13 @@ func (b *Builder) Output(dmltype DMLType) string {
 func (b *Builder) OutputParams(dmltype DMLType) []interface{} {
 	rlen := 0
 	if dmltype != DELETE {
-		rlen += b.fields.Len()
+		if len(b.fieldsmap) != 0 {
+			for _, fm := range b.fieldsmap {
+				rlen += fm.Len()
+			}
+		} else {
+			rlen += b.fields.Len()
+		}
 	}
 	if dmltype != INSERT {
 		rlen += len(b.whereargs)
@@ -134,9 +140,18 @@ func (b *Builder) OutputParams(dmltype DMLType) []interface{} {
 	rct := 0
 
 	if dmltype != DELETE {
-		for f := b.fields.Front(); f != nil; f = f.Next() {
-			ret[rct] = f.Value.(*field).value
-			rct++
+		if len(b.fieldsmap) != 0 {
+			for _, fm := range b.fieldsmap {
+				for f := fm.Front(); f != nil; f = f.Next() {
+					ret[rct] = f.Value.(*field).value
+					rct++
+				}
+			}
+		} else {
+			for f := b.fields.Front(); f != nil; f = f.Next() {
+				ret[rct] = f.Value.(*field).value
+				rct++
+			}
 		}
 	}
 
