@@ -237,7 +237,9 @@ func (b *Builder) buildInsert() string {
 	} else {
 		ret.WriteString(") VALUES (")
 		first = true
-		for i, fm := range b.fieldsmap {
+		var i int
+		for _, fm := range b.fieldsmap {
+			i++
 			if !first {
 				ret.WriteString(" (")
 			}
@@ -251,7 +253,7 @@ func (b *Builder) buildInsert() string {
 				}
 				ret.WriteString(b.processor.NextParam(f.Value.(*field).name))
 			}
-			if i == (len(b.fieldsmap) - 1) {
+			if i == (len(b.fieldsmap)) {
 				ret.WriteString(")")
 			} else {
 				ret.WriteString("),")
