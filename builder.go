@@ -234,13 +234,12 @@ func (b *Builder) buildDelete() string {
 }
 
 // Execute the current SQL on the database
-func (b *Builder) Exec(db *sql.DB, dmltype DMLType) (res sql.Result, err error) {
+func (b *Builder) Exec(db Execer, dmltype DMLType) (res sql.Result, err error) {
 	res, err = db.Exec(b.Output(dmltype), b.OutputParams(dmltype)...)
 	return
 }
 
-// Execute the current SQL on the transaction
-func (b *Builder) ExecTx(tx *sql.Tx, dmltype DMLType) (res sql.Result, err error) {
-	res, err = tx.Exec(b.Output(dmltype), b.OutputParams(dmltype)...)
-	return
+// Execute the current SQL on the transaction (compatibility with previous version)
+func (b *Builder) ExecTx(tx Execer, dmltype DMLType) (res sql.Result, err error) {
+	return b.Exec(tx, dmltype)
 }
